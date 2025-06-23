@@ -3,6 +3,8 @@ services:
     build:
       context: ./backend
       target: deploy
+    depends_on:
+      - sidecar
     container_name: backend
     ports:
       - 8080:8080
@@ -13,8 +15,31 @@ services:
       target: debug
     ports:
       - 8081:8080
-    container_name: backend-dev-service
+    container_name: backend-dev
+    depends_on:
+      - sidecar-dev
     volumes:
       - ./backend:/app
+    environment:
+      - CGO_ENABLED=0
+
+  sidecar:
+    build:
+      context: ./sidecar
+      target: deploy
+    container_name: sidecar
+    ports:
+      # Will listen to 8000 port on local machine
+      - 8000:8080
+
+  sidecar-dev:
+    build:
+      context: ./sidecar
+      target: debug
+    ports:
+      - 8001:8080
+    container_name: sidecar-dev
+    volumes:
+      - ./sidecar:/app
     environment:
       - CGO_ENABLED=0
