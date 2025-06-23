@@ -3,8 +3,6 @@ services:
     build:
       context: ./backend
       target: deploy
-    depends_on:
-      - sidecar
     container_name: backend
     ports:
       - 8080:8080
@@ -16,8 +14,6 @@ services:
     ports:
       - 8081:8080
     container_name: backend-dev
-    depends_on:
-      - sidecar-dev
     volumes:
       - ./backend:/app
     environment:
@@ -28,6 +24,8 @@ services:
       context: ./sidecar
       target: deploy
     container_name: sidecar
+    depends_on:
+      - backend
     ports:
       # Will listen to 8000 port on local machine
       - 8000:8080
@@ -39,6 +37,8 @@ services:
     ports:
       - 8001:8080
     container_name: sidecar-dev
+    depends_on:
+      - backend-dev
     volumes:
       - ./sidecar:/app
     environment:
