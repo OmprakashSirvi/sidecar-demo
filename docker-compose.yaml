@@ -1,0 +1,20 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      target: deploy
+    container_name: backend
+    ports:
+      - 8080:8080
+
+  backend-dev:
+    build:
+      context: ./backend
+      target: debug
+    ports:
+      - 8081:8080
+    container_name: backend-dev-service
+    volumes:
+      - ./backend:/app
+    environment:
+      - CGO_ENABLED=0

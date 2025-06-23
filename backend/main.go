@@ -10,6 +10,8 @@ func main() {
 	router := gin.Default()
 
 	router.GET("/ping", handlePing)
+
+	router.Run()
 }
 
 func handlePing(c *gin.Context) {
