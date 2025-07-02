@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"sidecar/config"
 	"sidecar/constants"
 
 	"github.com/gin-gonic/gin"
@@ -41,7 +42,7 @@ func setProxyRoutes(router *gin.Engine, proxy *httputil.ReverseProxy) {
 	}
 
 	var routes []Route
-	err := viper.UnmarshalKey(getKeyNameForEnv(constants.PROXY_ROUTES), &routes)
+	err := viper.UnmarshalKey(config.GetKeyNameForEnv(constants.PROXY_ROUTES), &routes)
 	if err != nil {
 		panic("invalid proxy-routes configuration")
 	}
