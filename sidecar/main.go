@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"path/filepath"
+	"sidecar/constants"
 
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
@@ -31,6 +33,20 @@ func initConfig() {
 		panic("not able to read proxy.yaml")
 	}
 	viper.AutomaticEnv()
+
+	viper.SetDefault(constants.MY_ENV, "local")
+}
+
+// Get the key name with the current env
+func getKeyNameForEnv(key string) string {
+	env := viper.GetString(constants.MY_ENV)
+	keyName := fmt.Sprintf("%v.%v", env, key)
+	if viper.IsSet(keyName) {
+		// This means there is an override available for this key in current env configuration
+		return keyName
+	}
+	// No override is available for this key, use the existing one..
+	return key
 }
 
 func main() {
@@ -41,7 +57,9 @@ func main() {
 	//  and some other information, This will be modified in the future.
 	router.GET("/info", handleSidecarInfo)
 
-	ginProxy, err := NewReverseProxy(PROXY_BACKEND)
+	backendUrl := viper.GetString(getKeyNameForEnv(constants.PROXY_BACKEND))
+	fmt.Printf("backend URL : %v\n", backendUrl)
+	ginProxy, err := NewReverseProxy(backendUrl)
 	if err != nil {
 		panic("invalid proxy backend configuration")
 	}
