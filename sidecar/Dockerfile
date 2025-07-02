@@ -60,6 +60,7 @@ WORKDIR /app
 # Copy the statically compiled Go binary from the builder stage.
 # Also copy ownership information for the new user.
 COPY --from=builder --chown=appuser:appgroup /app/sidecar .
+COPY --from=builder --chown=appuser:appgroup /app/conf /conf
 
 # Switch to the non-root user.
 USER appuser

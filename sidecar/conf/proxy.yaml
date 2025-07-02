@@ -1,0 +1,6 @@
+proxy-routes:
+  - type: GET
+    path: /ping
+
+  - type: GET
+    path: test
