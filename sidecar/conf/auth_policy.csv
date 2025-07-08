@@ -1,0 +1,12 @@
+# Policy rules (role, path, method)
+p, admin, /serviceInfo, GET
+p, admin, /shutdown, DELETE
+
+# Public routes
+p, everyone, /ping, GET
+
+# -----------------------------------------------
+
+# Role assignments (user, role)
+g, 1, admin
+g, 2, admin

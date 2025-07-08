@@ -1,11 +1,14 @@
 proxy-backend: http://localhost:8080
 
-local:
-  proxy-backend: http://backend:8080
+authz-config:
+  - type: "user-id"
 
 proxy-routes:
   - type: GET
     path: /ping
 
   - type: GET
-    path: test
+    path: /serviceInfo
+
+local:
+  proxy-backend: http://backend:8080

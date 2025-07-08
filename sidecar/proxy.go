@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"sidecar/config"
 	"sidecar/constants"
+	"sidecar/globals"
 
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog"
@@ -62,6 +63,21 @@ func proxyRequestHandler(proxy *httputil.ReverseProxy, route Route) gin.HandlerF
 	logger := getLogger()
 	logger.Debug().Msg(fmt.Sprintf("handling route for: %v:%v", route.Type, route.Path))
 	return func(ctx *gin.Context) {
+		userId := ctx.GetHeader("x-user-id")
+		path := ctx.Request.URL.Path
+		method := ctx.Request.Method
+		ok, err := globals.Global.UserAuthorizer.Enforcer.Enforce(userId, path, method)
+		if err != nil {
+			ctx.AbortWithStatusJSON(http.StatusBadRequest, "something went wrong while authorizing user")
+			return
+		}
+		if !ok {
+			ctx.AbortWithStatusJSON(http.StatusForbidden, "user not authorized")
+			return
+		}
+		msg := fmt.Sprintf("the user: %v, is allowed access to %v:%v", userId, method, path)
+		logger.Debug().Msg(msg)
+
 		proxy.ServeHTTP(ctx.Writer, ctx.Request)
 	}
 }
