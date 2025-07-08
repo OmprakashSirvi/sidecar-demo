@@ -18,7 +18,8 @@ func InitConfig() {
 	viper.AddConfigPath(abs)
 	err := viper.ReadInConfig()
 	if err != nil {
-		panic("not able to read proxy.yaml")
+		errStr := fmt.Sprintf("not able to read proxy.yaml, error: %v", err)
+		panic(errStr)
 	}
 	viper.AutomaticEnv()
 

@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"os"
 	"path/filepath"
+	"sidecar/applogger"
 	"sidecar/config"
 	"sidecar/constants"
 	"sidecar/globals"
@@ -20,16 +20,8 @@ type Route struct {
 	Path string
 }
 
-func initLogging() {
-	zerolog.SetGlobalLevel(zerolog.DebugLevel)
-}
-
-func getLogger() zerolog.Logger {
-	return zerolog.New(os.Stdout)
-}
-
 func initSidecar() {
-	logger := getLogger()
+	logger := applogger.GetLogger()
 	config.InitConfig()
 
 	globals.Global.ProxyBackend = viper.GetString(config.GetKeyNameForEnv(constants.PROXY_BACKEND))
@@ -40,6 +32,7 @@ func initSidecar() {
 		errStr := fmt.Sprintf("invalid config directory, error: %v", err)
 		panic(errStr)
 	}
+
 	modelPath := filepath.Join(configDir, "auth_models.conf")
 	policyPath := filepath.Join(configDir, "auth_policy.csv")
 
@@ -54,16 +47,20 @@ func initSidecar() {
 
 func main() {
 	router := gin.Default()
-	initLogging()
+	applogger.InitLogging()
 	initSidecar()
 
-	logger := getLogger()
+	logger := applogger.GetLogger()
+
+	// For logging purposes
+	router.Use(applogger.LoggingMiddleware())
 
 	// Get information regarding sidecar, this will give out the routes it supports,
 	// and some other information, This will be modified in the future.
 	router.GET("/info", handleSidecarInfo)
 
 	if globals.Global.ProxyBackend != "" {
+		logger.Debug().Str("proxy_backend", globals.Global.ProxyBackend).Msg("enabling reverse proxy for provided backend")
 		ginProxy, err := NewReverseProxy(globals.Global.ProxyBackend)
 		if err != nil {
 			panic("invalid proxy backend configuration")
@@ -72,13 +69,12 @@ func main() {
 		setProxyRoutes(router, ginProxy, logger)
 	}
 
-	// router.NoRoute(func(ctx *gin.Context) {
-	// 	// TODO: We can use the ctx to filter out any invalid or unregistered routes.
-	// 	ginProxy.ServeHTTP(ctx.Writer, ctx.Request)
-	// })
 	router.Run()
 }
-
+ 
 func handleSidecarInfo(c *gin.Context) {
+	logger := zerolog.Ctx(c.Request.Context())
+
 	c.JSON(http.StatusOK, "basic sidecar information here")
+	logger.Debug().Msg("sidecar info handled")
 }

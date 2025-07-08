@@ -7,7 +7,8 @@ type globalVars struct {
 	// Need to setup reverse proxy for this and forward request to sidecar here..
 	ProxyBackend string
 
-	UserAuthorizer *BasicAuthorizer
+	UserAuthorizer    *BasicAuthorizer
+	ServiceAuthorizer *BasicAuthorizer
 }
 
 type BasicAuthorizer struct {

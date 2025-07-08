@@ -41,6 +41,7 @@ RUN go install github.com/githubnemo/CompileDaemon
 
 # Copy the rest of the application files.
 COPY . .
+COPY --from=builder /app/conf /conf
 
 # Entry point for the debugging container.
 # Watches for file changes and rebuilds/reruns the app.

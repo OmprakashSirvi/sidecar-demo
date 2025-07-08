@@ -29,6 +29,9 @@ services:
     ports:
       # Will listen to 8000 port on local machine
       - 8000:8080
+    environment:
+      - MY_ENV=local
+      - GIN_MODE=release
 
   sidecar-dev:
     build:
@@ -43,3 +46,4 @@ services:
       - ./sidecar:/app
     environment:
       - CGO_ENABLED=0
+      - MY_ENV=local-dev
