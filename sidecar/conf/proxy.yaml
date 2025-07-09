@@ -2,8 +2,12 @@ proxy-backend: http://localhost:8080
 
 authz-config:
   - type: "user-id"
+    model-file: "authz_models.conf"
+    policy-file: "auth_policy.csv"
 
   - type: "service-id"
+    model-file: "authz_service_models.conf"
+    policy-file: "auth_service_policy.csv"
 
 proxy-routes:
   - type: GET

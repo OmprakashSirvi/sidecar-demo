@@ -37,7 +37,6 @@ func UpstreamResponseModifier(r *http.Response) error {
 	return nil
 }
 
-// panic if something goes wrong
 func setProxyRoutes(router *gin.Engine, proxy *httputil.ReverseProxy, logger zerolog.Logger) {
 	// This will be a good location to get the proxy routes
 	if ok := viper.IsSet(constants.PROXY_ROUTES); !ok {
@@ -46,9 +45,9 @@ func setProxyRoutes(router *gin.Engine, proxy *httputil.ReverseProxy, logger zer
 	}
 
 	var routes []Route
-	err := viper.UnmarshalKey(config.GetKeyNameForEnv(constants.PROXY_ROUTES), &routes)
+	err := viper.UnmarshalKey(config.GetKeyName(constants.PROXY_ROUTES), &routes)
 	if err != nil {
-		panic("invalid proxy-routes configuration")
+		logger.Fatal().Err(err).Msg("invalid proxy-routes configuration")
 	}
 
 	for _, route := range routes {

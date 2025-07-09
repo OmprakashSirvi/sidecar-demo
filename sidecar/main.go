@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"net/http"
 	"path/filepath"
@@ -8,6 +9,7 @@ import (
 	"sidecar/config"
 	"sidecar/constants"
 	"sidecar/globals"
+	"sync"
 
 	"github.com/casbin/casbin/v2"
 	"github.com/gin-gonic/gin"
@@ -20,37 +22,72 @@ type Route struct {
 	Path string
 }
 
+var defineFlags sync.Once
+
 func initSidecar() {
 	logger := applogger.GetLogger()
 	config.InitConfig()
 
-	globals.Global.ProxyBackend = viper.GetString(config.GetKeyNameForEnv(constants.PROXY_BACKEND))
+	globals.Global.ProxyBackend = viper.GetString(config.GetKeyName(constants.PROXY_BACKEND))
 	logger.Debug().Str("message", fmt.Sprintf("backend URL : %v", globals.Global.ProxyBackend))
 
-	configDir, err := filepath.Abs("/conf")
+	configDir, err := filepath.Abs(globals.Global.ConfigDir)
 	if err != nil {
-		errStr := fmt.Sprintf("invalid config directory, error: %v", err)
-		panic(errStr)
+		logger.Fatal().Err(err).Msg("invalid config directory")
 	}
 
-	modelPath := filepath.Join(configDir, "auth_models.conf")
-	policyPath := filepath.Join(configDir, "auth_policy.csv")
+	logger.Debug().Int("length", len(globals.Global.AuthzConfigs)).Msg("number of authz-configs provided")
+	for _, authzConfig := range globals.Global.AuthzConfigs {
+		switch authzConfig.AuthzType {
+		// Load user enforcer
+		case constants.USER_ID:
+			logger.Debug().Msg("loading user-id authz-config")
+			modelPath := filepath.Join(configDir, authzConfig.ModelFile)
+			policyPath := filepath.Join(configDir, authzConfig.PolicyFile)
+			globals.Global.UserAuthorizer = loadEnforcer(modelPath, policyPath)
+
+		// Load service enforcer
+		case constants.SERVICE_ID:
+			logger.Debug().Msg("loading service-id authz-config")
+			modelPath := filepath.Join(configDir, authzConfig.ModelFile)
+			policyPath := filepath.Join(configDir, authzConfig.PolicyFile)
+			globals.Global.ServiceAuthorizer = loadEnforcer(modelPath, policyPath)
+
+		// Handle invalid configuration
+		default:
+			logger.Fatal().Str("type", authzConfig.AuthzType).Msg("unsupported authz-config type provided")
+		}
+	}
+}
+
+// loadEnforcer creates a new Casbin SyncedEnforcer from the given model and policy files.
+func loadEnforcer(modelPath string, policyPath string) *globals.BasicAuthorizer {
+	logger := applogger.GetLogger()
 
 	syncedEnforcer, err := casbin.NewSyncedEnforcer(modelPath, policyPath)
 	if err != nil {
-		errStr := fmt.Sprintf("unable to load enforcer: %v", err)
-		panic(errStr)
+		logger.Fatal().Err(err).Msg("unable to load enforcer with model")
 	}
+
 	syncedEnforcer.EnableLog(true)
-	globals.Global.UserAuthorizer = &globals.BasicAuthorizer{Enforcer: syncedEnforcer}
+	logger.Info().Str("model", modelPath).Msg("Successfully loaded Casbin enforcer")
+
+	return &globals.BasicAuthorizer{Enforcer: syncedEnforcer}
 }
 
 func main() {
-	router := gin.Default()
 	applogger.InitLogging()
-	initSidecar()
-
 	logger := applogger.GetLogger()
+	defineFlags.Do(func() {
+		logger.Debug().Msg("loading command line flags")
+		flag.StringVar(&globals.Global.ConfigDir, "config-dir", "/conf", "location of config dir, defaults to /conf")
+
+		flag.Parse()
+	})
+
+	router := gin.Default()
+
+	initSidecar()
 
 	// For logging purposes
 	router.Use(applogger.LoggingMiddleware())
@@ -63,7 +100,7 @@ func main() {
 		logger.Debug().Str("proxy_backend", globals.Global.ProxyBackend).Msg("enabling reverse proxy for provided backend")
 		ginProxy, err := NewReverseProxy(globals.Global.ProxyBackend)
 		if err != nil {
-			panic("invalid proxy backend configuration")
+			logger.Fatal().Err(err).Msg("invalid proxy backend configuration")
 		}
 
 		setProxyRoutes(router, ginProxy, logger)
@@ -71,7 +108,7 @@ func main() {
 
 	router.Run()
 }
- 
+
 func handleSidecarInfo(c *gin.Context) {
 	logger := zerolog.Ctx(c.Request.Context())
 

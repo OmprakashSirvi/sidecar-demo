@@ -3,31 +3,35 @@ package config
 import (
 	"fmt"
 	"path/filepath"
+	"sidecar/applogger"
 	"sidecar/constants"
+	"sidecar/globals"
 
+	"github.com/rs/zerolog"
 	"github.com/spf13/viper"
 )
 
-// TODO: Specify the pathname and config file name dynamically
+// Initialize configurations path and load configurations
 func InitConfig() {
+	logger := applogger.GetLogger()
 	viper.SetConfigName("proxy")
 	viper.SetConfigType("yaml")
-	// TODO: Should get the config directory dynamically while initializing the service
-	// Keep this as default if config directory is not provided
-	abs, _ := filepath.Abs("/conf")
+	abs, _ := filepath.Abs(globals.Global.ConfigDir)
 	viper.AddConfigPath(abs)
 	err := viper.ReadInConfig()
 	if err != nil {
-		errStr := fmt.Sprintf("not able to read proxy.yaml, error: %v", err)
-		panic(errStr)
+		logger.Fatal().Err(err).Msg("not able to read proxy.yaml")
 	}
+
 	viper.AutomaticEnv()
 
+	// Setting the default environment variables
 	viper.SetDefault(constants.MY_ENV, "local")
+	loadAuthzConfigs(&logger)
 }
 
 // Get the key name with the current env
-func GetKeyNameForEnv(key string) string {
+func GetKeyName(key string) string {
 	env := viper.GetString(constants.MY_ENV)
 	keyName := fmt.Sprintf("%v.%v", env, key)
 	if viper.IsSet(keyName) {
@@ -38,3 +42,15 @@ func GetKeyNameForEnv(key string) string {
 	return key
 }
 
+// Loads and validates the authz-configs
+func loadAuthzConfigs(logger *zerolog.Logger) {
+	var authzConfigs []globals.AuthzConfig
+	err := viper.UnmarshalKey(GetKeyName(constants.AUTHZ_POLICY), &authzConfigs)
+	if err != nil {
+		logger.Fatal().Err(err).Msg("unable to load authz policies")
+	}
+
+	// We can validate the authz configurations here if needed
+
+	globals.Global.AuthzConfigs = authzConfigs
+}
