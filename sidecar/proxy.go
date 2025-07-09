@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"errors"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -37,16 +37,9 @@ func UpstreamResponseModifier(r *http.Response) error {
 }
 
 func setProxyRoutes(router *gin.Engine, proxy *httputil.ReverseProxy, logger zerolog.Logger) {
-	// This will be a good location to get the proxy routes
-	if ok := viper.IsSet(constants.PROXY_ROUTES); !ok {
-		logger.Debug().Msg("proxy-routes is not set, hence not configuring any routes")
-		return
-	}
-
-	var routes []Route
-	err := viper.UnmarshalKey(config.GetKeyName(constants.PROXY_ROUTES), &routes)
+	routes, err := getRoutesFromConfig(logger)
 	if err != nil {
-		logger.Fatal().Err(err).Msg("invalid proxy-routes configuration")
+		return
 	}
 
 	for _, route := range routes {
@@ -58,24 +51,60 @@ func setProxyRoutes(router *gin.Engine, proxy *httputil.ReverseProxy, logger zer
 	}
 }
 
+// Errors are already logged
+func getRoutesFromConfig(logger zerolog.Logger) ([]Route, error){
+	if ok := viper.IsSet(constants.PROXY_ROUTES); !ok {
+		errMsg := "proxy-routes is not set, hence not configuring any routes"
+		logger.Debug().Msg(errMsg)
+		return nil, errors.New(errMsg)
+	}
+
+	var routes []Route
+	err := viper.UnmarshalKey(config.GetKeyName(constants.PROXY_ROUTES), &routes)
+	if err != nil {
+		logger.Fatal().Err(err).Msg("invalid proxy-routes configuration")
+		return nil, err
+	}
+
+	return routes, nil
+}
+
 func proxyRequestHandler(proxy *httputil.ReverseProxy, route Route) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		logger := zerolog.Ctx(ctx.Request.Context())
-		userId := ctx.GetHeader("x-user-id")
-		path := ctx.Request.URL.Path
-		method := ctx.Request.Method
-		ok, err := globals.Global.UserAuthorizer.Enforcer.Enforce(userId, path, method)
-		if err != nil {
-			ctx.AbortWithStatusJSON(http.StatusBadRequest, "something went wrong while authorizing user")
+
+		if ok := authorizeRequest(ctx, logger); !ok {
 			return
 		}
-		if !ok {
-			ctx.AbortWithStatusJSON(http.StatusForbidden, "user not authorized")
-			return
-		}
-		msg := fmt.Sprintf("the user: %v, is allowed access to %v:%v", userId, method, path)
-		logger.Debug().Msg(msg)
 
 		proxy.ServeHTTP(ctx.Writer, ctx.Request)
 	}
+}
+
+func authorizeRequest(c *gin.Context, parentLogger *zerolog.Logger) bool {
+	userId := getUserIdFromHeader(c)
+	
+	path := c.Request.URL.Path
+	method := c.Request.Method
+	logger := parentLogger.With().Str("userId", userId).Str("method", method).Str("path", path).Logger()
+	ok, err := globals.Global.UserAuthorizer.Enforcer.Enforce(userId, path, method)
+	if err != nil {
+		msg := "something went wrong while authorizing user"
+		logger.Error().Err(err).Msg(msg)
+		c.AbortWithStatusJSON(http.StatusBadRequest, msg)
+		return false
+	}
+	if !ok {
+		logger.Error().Msg("user not allowed to access this route")
+		c.AbortWithStatusJSON(http.StatusForbidden, "user not authorized")
+		return false
+	}
+
+	logger.Debug().Msg("allowed access")
+	return true
+}
+
+// TODO: This will be enhanced to verify the jwt, introspect the token to get userID
+func getUserIdFromHeader(c *gin.Context) string {
+	return c.GetHeader("x-user-id")
 }
