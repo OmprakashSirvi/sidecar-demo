@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"sidecar/applogger"
 	"sidecar/config"
 	"sidecar/constants"
 	"sidecar/globals"
@@ -60,9 +59,8 @@ func setProxyRoutes(router *gin.Engine, proxy *httputil.ReverseProxy, logger zer
 }
 
 func proxyRequestHandler(proxy *httputil.ReverseProxy, route Route) gin.HandlerFunc {
-	logger := applogger.GetLogger()
-	logger.Debug().Msg(fmt.Sprintf("handling route for: %v:%v", route.Type, route.Path))
 	return func(ctx *gin.Context) {
+		logger := zerolog.Ctx(ctx.Request.Context())
 		userId := ctx.GetHeader("x-user-id")
 		path := ctx.Request.URL.Path
 		method := ctx.Request.Method

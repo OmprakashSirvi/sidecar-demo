@@ -96,21 +96,27 @@ func main() {
 
 	initSidecar()
 
-	router := gin.Default()
-	// router.Use(MaxAll)
-	// For logging purposes
-	router.Use(middlewares.LoggingMiddleware())
-
-	// Maximum number of connections
-	router.Use(middlewares.ConnectionLimiter())
-
+	// sidecar router, handles sidecar routes
+	sidecarRouter := gin.Default()
 	// Request timeouts
-	router.Use(middlewares.TimeoutMiddleware())
+	sidecarRouter.Use(middlewares.TimeoutMiddleware())
 
 	// Get information regarding sidecar, this will give out the routes it supports,
 	// and some other information, This will be modified in the future.
-	router.GET("/info", handleSidecarInfo)
-	router.GET("/ticket", handleGetServiceTicket)
+	sidecarRouter.GET("/info", handleSidecarInfo)
+	sidecarRouter.GET("/ticket", handleGetServiceTicket)
+
+	go func ()  {
+		err := sidecarRouter.Run("localhost:8070")
+		if err != nil {
+			logger.Error().Err(err).Msg("sidecarRouter error")
+		}
+	}()
+
+	// Reverse proxy router, handles backend routes
+	router := gin.Default()
+	// For logging purposes
+	router.Use(middlewares.LoggingMiddleware())
 
 	if globals.Global.ProxyBackend != "" {
 		logger.Debug().Str("proxy_backend", globals.Global.ProxyBackend).Msg("enabling reverse proxy for provided backend")
@@ -122,6 +128,7 @@ func main() {
 		setProxyRoutes(router, ginProxy, logger)
 	}
 
+	// Will listen to default port: 8000
 	router.Run()
 }
 
@@ -129,8 +136,8 @@ func main() {
 func handleSidecarInfo(c *gin.Context) {
 	logger := zerolog.Ctx(c.Request.Context())
 
+	logger.Debug().Msg("handling sidecar info")
 	c.JSON(http.StatusOK, "basic sidecar information here")
-	logger.Debug().Msg("sidecar info handled")
 }
 
 // TODO: Implement this handler

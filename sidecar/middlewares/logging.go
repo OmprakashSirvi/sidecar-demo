@@ -1,28 +1,46 @@
 package middlewares
 
 import (
+	"sidecar/applogger"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/rs/zerolog/log"
 )
 
-
+// LoggingMiddleware generates a request ID, adds it to the request context
+// and headers, and logs request details.
 func LoggingMiddleware() gin.HandlerFunc {
+	logger := applogger.GetLogger()
 	return func(ctx *gin.Context) {
-		requestId := uuid.New().String()
+		// 1. Check for an existing Request ID from an upstream service
+		requestId := ctx.GetHeader("X-Request-ID")
+		if requestId == "" {
+			// 2. Generate a new one if it doesn't exist
+			requestId = uuid.New().String()
+		}
+		logger.Debug().Str("request_id", requestId).Msg("request id generated")
 
-		reqLogger := log.With().Str("request_id", requestId).Logger()
+		// 3. Set the header on the INCOMING request object.
+		ctx.Request.Header.Set("X-Request-ID", requestId)
 
-		c := reqLogger.WithContext(ctx.Request.Context())
-		ctx.Request = ctx.Request.WithContext(c)
+		// Also set the response header so the original client gets the ID back.
+		ctx.Header("X-Request-ID", requestId)
+
+		// 4. Create a logger with the request_id field for sidecar's logs
+		reqLogger := logger.With().Str("request_id", requestId).Logger()
+
+		// 5. Store the logger in the Gin context for use in other sidecar handlers
+		ctx.Set("logger", reqLogger)
 
 		start := time.Now()
 		path := ctx.Request.URL.Path
 		method := ctx.Request.Method
 
-		reqLogger.Debug().Str("method", method).Str("path", path).Str("ip", ctx.ClientIP()).
+		reqLogger.Trace().
+			Str("method", method).
+			Str("path", path).
+			Str("ip", ctx.ClientIP()).
 			Msg("incoming request")
 
 		ctx.Next()
@@ -30,8 +48,11 @@ func LoggingMiddleware() gin.HandlerFunc {
 		latency := time.Since(start)
 		statusCode := ctx.Writer.Status()
 
-		reqLogger.Debug().Int("status_code", statusCode).Str("method", method).Str("path", path).Dur("latency", latency).
+		reqLogger.Trace().
+			Int("status_code", statusCode).
+			Str("method", method).
+			Str("path", path).
+			Dur("latency", latency).
 			Msg("request completed")
 	}
 }
-
