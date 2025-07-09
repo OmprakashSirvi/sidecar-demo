@@ -9,6 +9,7 @@ import (
 	"sidecar/config"
 	"sidecar/constants"
 	"sidecar/globals"
+	"sidecar/middlewares"
 	"sync"
 
 	"github.com/casbin/casbin/v2"
@@ -36,6 +37,14 @@ func initSidecar() {
 		logger.Fatal().Err(err).Msg("invalid config directory")
 	}
 
+	// Set default values for your configuration keys.
+	viper.SetDefault(config.GetKeyName(constants.MAX_CONNECTION_LIMIT), 50)
+	viper.SetDefault(config.GetKeyName(constants.REQUEST_TIMEOUT), 10)
+
+	globals.Global.MaxConnectionLimit = viper.GetInt(config.GetKeyName(constants.MAX_CONNECTION_LIMIT))
+	globals.Global.RequestTimeout = viper.GetInt(config.GetKeyName(constants.REQUEST_TIMEOUT))
+
+	// Load casbin enforcers from authz config
 	logger.Debug().Int("length", len(globals.Global.AuthzConfigs)).Msg("number of authz-configs provided")
 	for _, authzConfig := range globals.Global.AuthzConfigs {
 		switch authzConfig.AuthzType {
@@ -85,16 +94,23 @@ func main() {
 		flag.Parse()
 	})
 
-	router := gin.Default()
-
 	initSidecar()
 
+	router := gin.Default()
+	// router.Use(MaxAll)
 	// For logging purposes
-	router.Use(applogger.LoggingMiddleware())
+	router.Use(middlewares.LoggingMiddleware())
+
+	// Maximum number of connections
+	router.Use(middlewares.ConnectionLimiter())
+
+	// Request timeouts
+	router.Use(middlewares.TimeoutMiddleware())
 
 	// Get information regarding sidecar, this will give out the routes it supports,
 	// and some other information, This will be modified in the future.
 	router.GET("/info", handleSidecarInfo)
+	router.GET("/ticket", handleGetServiceTicket)
 
 	if globals.Global.ProxyBackend != "" {
 		logger.Debug().Str("proxy_backend", globals.Global.ProxyBackend).Msg("enabling reverse proxy for provided backend")
@@ -109,9 +125,15 @@ func main() {
 	router.Run()
 }
 
+// TODO: Implement this handler
 func handleSidecarInfo(c *gin.Context) {
 	logger := zerolog.Ctx(c.Request.Context())
 
 	c.JSON(http.StatusOK, "basic sidecar information here")
 	logger.Debug().Msg("sidecar info handled")
+}
+
+// TODO: Implement this handler
+func handleGetServiceTicket(c *gin.Context) {
+
 }

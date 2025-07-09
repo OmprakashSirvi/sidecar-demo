@@ -1,5 +1,8 @@
 proxy-backend: http://localhost:8080
 
+max-connection-limit: 10
+request-timeout: 10
+
 authz-config:
   - type: "user-id"
     model-file: "authz_models.conf"
