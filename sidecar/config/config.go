@@ -59,7 +59,7 @@ func loadAuthzConfigs(logger *zerolog.Logger) {
 
 // Errors are already logged
 func GetRoutesFromConfig(logger zerolog.Logger) ([]models.ProxyRoute, error) {
-	if ok := viper.IsSet(constants.PROXY_ROUTES); !ok {
+	if ok := viper.IsSet(GetKeyName(constants.PROXY_ROUTES)); !ok {
 		errMsg := "proxy-routes is not set, hence not configuring any routes"
 		logger.Debug().Msg(errMsg)
 		return nil, errors.New(errMsg)

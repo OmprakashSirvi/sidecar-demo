@@ -7,6 +7,8 @@ require (
 	github.com/spf13/viper v1.20.1
 )
 
+require golang.org/x/time v0.12.0 // indirect
+
 require (
 	github.com/bmatcuk/doublestar/v4 v4.6.1 // indirect
 	github.com/bytedance/sonic v1.11.6 // indirect

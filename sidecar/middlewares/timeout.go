@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// TODO: This is work in progress for now
 // TimeoutMiddleware creates a Gin middleware for handling request timeouts.
 func TimeoutMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {

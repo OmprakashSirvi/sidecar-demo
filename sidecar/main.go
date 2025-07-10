@@ -37,9 +37,14 @@ func initSidecar() {
 	// Set default values for your configuration keys.
 	viper.SetDefault(config.GetKeyName(constants.MAX_CONNECTION_LIMIT), 50)
 	viper.SetDefault(config.GetKeyName(constants.REQUEST_TIMEOUT), 10)
+	viper.SetDefault(config.GetKeyName(constants.MAX_REQUESTS_PER_SECOND), constants.DefaultMaxRequestPerSecond)
+	viper.SetDefault(config.GetKeyName(constants.BURST_THRESHOLD), constants.BURST_THRESHOLD)
 
+	// Set the config values into the application's global configuration
 	globals.Global.MaxConnectionLimit = viper.GetInt(config.GetKeyName(constants.MAX_CONNECTION_LIMIT))
 	globals.Global.RequestTimeout = viper.GetInt(config.GetKeyName(constants.REQUEST_TIMEOUT))
+	globals.Global.MaxRequestsPerSecond = viper.GetFloat64(config.GetKeyName(constants.MAX_REQUESTS_PER_SECOND))
+	globals.Global.BurstThreshold = viper.GetInt(config.GetKeyName(constants.BURST_THRESHOLD))
 
 	// Load casbin enforcers from authz config
 	logger.Debug().Int("length", len(globals.Global.AuthzConfigs)).Msg("number of authz-configs provided")
@@ -103,7 +108,7 @@ func main() {
 	sidecarRouter.GET("/info", handleSidecarInfo)
 	sidecarRouter.GET("/ticket", handleGetServiceTicket)
 
-	go func ()  {
+	go func() {
 		err := sidecarRouter.Run("localhost:8070")
 		if err != nil {
 			logger.Error().Err(err).Msg("sidecarRouter error")
@@ -114,6 +119,9 @@ func main() {
 	router := gin.Default()
 	// For logging purposes
 	router.Use(middlewares.LoggingMiddleware())
+
+	// Rate limiter
+	router.Use(middlewares.GlobalRateLimiter())
 
 	if globals.Global.ProxyBackend != "" {
 		logger.Debug().Str("proxy_backend", globals.Global.ProxyBackend).Msg("enabling reverse proxy for provided backend")
@@ -129,7 +137,7 @@ func main() {
 	router.Run()
 }
 
-// TODO: Implement this handler
+// TODO: Implement this handler to return information regarding sidecar configurations
 func handleSidecarInfo(c *gin.Context) {
 	logger := zerolog.Ctx(c.Request.Context())
 

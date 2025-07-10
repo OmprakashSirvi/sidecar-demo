@@ -2,6 +2,8 @@ proxy-backend: http://localhost:8080
 
 max-connection-limit: 10
 request-timeout: 10
+max-requests-per-second: 10
+burst-threshold: 20
 
 authz-config:
   - type: "user-id"
@@ -15,10 +17,18 @@ authz-config:
 proxy-routes:
   - type: GET
     path: /ping
-    public: true
 
   - type: GET
     path: /serviceInfo
+    enable-rate-limit: true
+    max-requests-per-second: 2
+    burst-threshold: 5
+    # TODO: Use these configurations
+    # For routes where the service ticket is required
+    require-service-ticket: true
+    # In-case a route requires multiple access tokens
+    tokens:
+      - type: user-jwt
 
 local:
   proxy-backend: http://backend:8080

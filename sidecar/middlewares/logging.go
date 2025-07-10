@@ -19,7 +19,7 @@ func LoggingMiddleware() gin.HandlerFunc {
 			// 2. Generate a new one if it doesn't exist
 			requestId = uuid.New().String()
 		}
-		logger.Debug().Str("request_id", requestId).Msg("request id generated")
+		logger.Trace().Str("request_id", requestId).Msg("request id generated")
 
 		// 3. Set the header on the INCOMING request object.
 		ctx.Request.Header.Set("X-Request-ID", requestId)

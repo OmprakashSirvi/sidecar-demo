@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// TODO: This is work in progress for now
 // ConnectionLimiter creates a Gin middleware that limits the number of
 // concurrent requests being processed.
 func ConnectionLimiter() gin.HandlerFunc {

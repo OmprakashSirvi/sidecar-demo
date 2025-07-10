@@ -9,16 +9,17 @@ import (
 type globalVars struct {
 	// Backend service URL
 	// Need to setup reverse proxy for this and forward request to sidecar here..
-	ProxyBackend       string
-	ConfigDir          string
-	AuthzConfigs       []models.AuthzConfig
-	MaxConnectionLimit int
-	RequestTimeout     int
+	ProxyBackend         string
+	ConfigDir            string
+	AuthzConfigs         []models.AuthzConfig
+	MaxConnectionLimit   int
+	RequestTimeout       int
+	MaxRequestsPerSecond float64
+	BurstThreshold       int
 
 	UserAuthorizer    *models.BasicAuthorizer
 	ServiceAuthorizer *models.BasicAuthorizer
 }
-
 
 // Stores the global variables
 var Global = globalVars{}
