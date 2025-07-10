@@ -1,0 +1,72 @@
+name: Build and Push Docker Images
+
+on:
+  push:
+    branches:
+      - '**'
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend_changed: ${{ steps.check_backend.outputs.changed }}
+      sidecar_changed: ${{ steps.check_sidecar.outputs.changed }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check changes in backend
+        id: check_backend
+        run: |
+          git fetch origin main
+          if git diff --quiet origin/main -- backend/; then
+            echo "No changes in backend"
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "Changes detected in backend"
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check changes in sidecar
+        id: check_sidecar
+        run: |
+          git fetch origin main
+          if git diff --quiet origin/main -- sidecar/; then
+            echo "No changes in sidecar"
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "Changes detected in sidecar"
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+  build-and-push-backend:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend_changed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      - name: Build and push backend image
+        run: |
+          IMAGE_TAG=$(echo "${GITHUB_REF##*/}" | tr '/' '-')
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/backend:$IMAGE_TAG ./backend
+          docker push ${{ secrets.DOCKER_USERNAME }}/backend:$IMAGE_TAG
+
+  build-and-push-sidecar:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.sidecar_changed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      - name: Build and push sidecar image
+        run: |
+          IMAGE_TAG=$(echo "${GITHUB_REF##*/}" | tr '/' '-')
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/sidecar:$IMAGE_TAG ./sidecar
+          docker push ${{ secrets.DOCKER_USERNAME }}/sidecar:$IMAGE_TAG
