@@ -1,11 +1,13 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 	"sidecar/applogger"
 	"sidecar/constants"
 	"sidecar/globals"
+	"sidecar/models"
 
 	"github.com/rs/zerolog"
 	"github.com/spf13/viper"
@@ -44,7 +46,7 @@ func GetKeyName(key string) string {
 
 // Loads and validates the authz-configs
 func loadAuthzConfigs(logger *zerolog.Logger) {
-	var authzConfigs []globals.AuthzConfig
+	var authzConfigs []models.AuthzConfig
 	err := viper.UnmarshalKey(GetKeyName(constants.AUTHZ_POLICY), &authzConfigs)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("unable to load authz policies")
@@ -53,4 +55,22 @@ func loadAuthzConfigs(logger *zerolog.Logger) {
 	// We can validate the authz configurations here if needed
 
 	globals.Global.AuthzConfigs = authzConfigs
+}
+
+// Errors are already logged
+func GetRoutesFromConfig(logger zerolog.Logger) ([]models.ProxyRoute, error) {
+	if ok := viper.IsSet(constants.PROXY_ROUTES); !ok {
+		errMsg := "proxy-routes is not set, hence not configuring any routes"
+		logger.Debug().Msg(errMsg)
+		return nil, errors.New(errMsg)
+	}
+
+	var routes []models.ProxyRoute
+	err := viper.UnmarshalKey(GetKeyName(constants.PROXY_ROUTES), &routes)
+	if err != nil {
+		logger.Fatal().Err(err).Msg("invalid proxy-routes configuration")
+		return nil, err
+	}
+
+	return routes, nil
 }

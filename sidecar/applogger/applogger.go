@@ -8,10 +8,10 @@ import (
 )
 
 func InitLogging() {
-	log.Logger = zerolog.New(os.Stdout).With().Timestamp().Logger()
+	log.Logger = zerolog.New(os.Stdout).With().Logger()
 	zerolog.SetGlobalLevel(zerolog.DebugLevel)
 }
 
 func GetLogger() zerolog.Logger {
-	return zerolog.New(os.Stdout).With().Timestamp().Logger()
+	return zerolog.New(os.Stdout).With().Logger()
 }

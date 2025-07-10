@@ -15,6 +15,7 @@ authz-config:
 proxy-routes:
   - type: GET
     path: /ping
+    public: true
 
   - type: GET
     path: /serviceInfo

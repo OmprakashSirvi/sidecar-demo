@@ -10,6 +10,8 @@ import (
 	"sidecar/constants"
 	"sidecar/globals"
 	"sidecar/middlewares"
+	"sidecar/models"
+	"sidecar/routes"
 	"sync"
 
 	"github.com/casbin/casbin/v2"
@@ -17,11 +19,6 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/spf13/viper"
 )
-
-type Route struct {
-	Type string
-	Path string
-}
 
 var defineFlags sync.Once
 
@@ -70,7 +67,7 @@ func initSidecar() {
 }
 
 // loadEnforcer creates a new Casbin SyncedEnforcer from the given model and policy files.
-func loadEnforcer(modelPath string, policyPath string) *globals.BasicAuthorizer {
+func loadEnforcer(modelPath string, policyPath string) *models.BasicAuthorizer {
 	logger := applogger.GetLogger()
 
 	syncedEnforcer, err := casbin.NewSyncedEnforcer(modelPath, policyPath)
@@ -81,7 +78,7 @@ func loadEnforcer(modelPath string, policyPath string) *globals.BasicAuthorizer 
 	syncedEnforcer.EnableLog(true)
 	logger.Info().Str("model", modelPath).Msg("Successfully loaded Casbin enforcer")
 
-	return &globals.BasicAuthorizer{Enforcer: syncedEnforcer}
+	return &models.BasicAuthorizer{Enforcer: syncedEnforcer}
 }
 
 func main() {
@@ -125,7 +122,7 @@ func main() {
 			logger.Fatal().Err(err).Msg("invalid proxy backend configuration")
 		}
 
-		setProxyRoutes(router, ginProxy, logger)
+		routes.SetProxyRoutes(router, ginProxy, logger)
 	}
 
 	// Will listen to default port: 8000

@@ -1,28 +1,24 @@
+// Stores the global variables of the service
+// Can implement thread safe mechanisms to access and modify these variables
 package globals
 
-import "github.com/casbin/casbin/v2"
+import (
+	"sidecar/models"
+)
 
 type globalVars struct {
 	// Backend service URL
 	// Need to setup reverse proxy for this and forward request to sidecar here..
 	ProxyBackend       string
 	ConfigDir          string
-	AuthzConfigs       []AuthzConfig
+	AuthzConfigs       []models.AuthzConfig
 	MaxConnectionLimit int
 	RequestTimeout     int
 
-	UserAuthorizer    *BasicAuthorizer
-	ServiceAuthorizer *BasicAuthorizer
+	UserAuthorizer    *models.BasicAuthorizer
+	ServiceAuthorizer *models.BasicAuthorizer
 }
 
-type BasicAuthorizer struct {
-	Enforcer *casbin.SyncedEnforcer
-}
 
-type AuthzConfig struct {
-	AuthzType  string `mapstructure:"type"`
-	ModelFile  string `mapstructure:"model-file"`
-	PolicyFile string `mapstructure:"policy-file"`
-}
-
+// Stores the global variables
 var Global = globalVars{}
