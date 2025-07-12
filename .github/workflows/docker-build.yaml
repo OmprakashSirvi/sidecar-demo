@@ -14,29 +14,55 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2  # Fetch the last 2 commits to compare
 
       - name: Check changes in backend
         id: check_backend
         run: |
-          git fetch origin main
-          if git diff --quiet origin/main -- backend/; then
-            echo "No changes in backend"
-            echo "changed=false" >> $GITHUB_OUTPUT
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            # On main branch, compare with previous commit
+            if git diff --quiet HEAD^ HEAD -- backend/; then
+              echo "No changes in backend"
+              echo "changed=false" >> $GITHUB_OUTPUT
+            else
+              echo "Changes detected in backend"
+              echo "changed=true" >> $GITHUB_OUTPUT
+            fi
           else
-            echo "Changes detected in backend"
-            echo "changed=true" >> $GITHUB_OUTPUT
+            # On other branches, compare with main
+            git fetch origin main
+            if git diff --quiet origin/main -- backend/; then
+              echo "No changes in backend"
+              echo "changed=false" >> $GITHUB_OUTPUT
+            else
+              echo "Changes detected in backend"
+              echo "changed=true" >> $GITHUB_OUTPUT
+            fi
           fi
 
       - name: Check changes in sidecar
         id: check_sidecar
         run: |
-          git fetch origin main
-          if git diff --quiet origin/main -- sidecar/; then
-            echo "No changes in sidecar"
-            echo "changed=false" >> $GITHUB_OUTPUT
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            # On main branch, compare with previous commit
+            if git diff --quiet HEAD^ HEAD -- sidecar/; then
+              echo "No changes in sidecar"
+              echo "changed=false" >> $GITHUB_OUTPUT
+            else
+              echo "Changes detected in sidecar"
+              echo "changed=true" >> $GITHUB_OUTPUT
+            fi
           else
-            echo "Changes detected in sidecar"
-            echo "changed=true" >> $GITHUB_OUTPUT
+            # On other branches, compare with main
+            git fetch origin main
+            if git diff --quiet origin/main -- sidecar/; then
+              echo "No changes in sidecar"
+              echo "changed=false" >> $GITHUB_OUTPUT
+            else
+              echo "Changes detected in sidecar"
+              echo "changed=true" >> $GITHUB_OUTPUT
+            fi
           fi
 
   build-and-push-backend:
