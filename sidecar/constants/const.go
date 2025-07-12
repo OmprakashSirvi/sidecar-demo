@@ -13,6 +13,10 @@ const MAX_CONNECTION_LIMIT = "max-connection-limit"
 const ENABLE_RATE_LIMIT = "enable-rate-limit"
 const MAX_REQUESTS_PER_SECOND = "max-requests-per-second"
 const BURST_THRESHOLD = "burst-threshold"
+const REQUIRE_SERVICE_TICKET = "require-service-ticket"
+const TOKENS = "user-jwt"
+const TOKEN_TYPE = "type"
+const TOKEN_TYPE_USER_JWT = "user-jwt"
 
 // Numeric constants
 

@@ -2,11 +2,17 @@
 package models
 
 type ProxyRoute struct {
-	Type                 string  `mapstructure:"type"`
-	Path                 string  `mapstructure:"path"`
-	EnableRateLimit      bool    `mapstructure:"enable-rate-limit"`
-	MaxRequestsPerSecond *float64 `mapstructure:"max-requests-per-second"`
-	BurstThreshold       *int     `mapstructure:"burst-threshold"`
+	Type                 string       `mapstructure:"type"`
+	Path                 string       `mapstructure:"path"`
+	EnableRateLimit      bool         `mapstructure:"enable-rate-limit"`
+	MaxRequestsPerSecond *float64     `mapstructure:"max-requests-per-second"`
+	BurstThreshold       *int         `mapstructure:"burst-threshold"`
+	RequireServiceTicket bool         `mapstructure:"require-service-ticket"`
+	RouteTokens          []RouteToken `mapstructure:"tokens"`
+}
+
+type RouteToken struct {
+	Type string `mapstructure:"user-jwt"`
 }
 
 func (route *ProxyRoute) GetMaxRequestsPerSecond() float64 {

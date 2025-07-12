@@ -4,6 +4,8 @@ package globals
 
 import (
 	"sidecar/models"
+
+	"github.com/redis/go-redis/v9"
 )
 
 type globalVars struct {
@@ -16,6 +18,7 @@ type globalVars struct {
 	RequestTimeout       int
 	MaxRequestsPerSecond float64
 	BurstThreshold       int
+	RedisDb              *redis.Client
 
 	UserAuthorizer    *models.BasicAuthorizer
 	ServiceAuthorizer *models.BasicAuthorizer

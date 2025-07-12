@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"net/http"
@@ -16,6 +17,7 @@ import (
 
 	"github.com/casbin/casbin/v2"
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog"
 	"github.com/spf13/viper"
 )
@@ -69,6 +71,19 @@ func initSidecar() {
 			logger.Fatal().Str("type", authzConfig.AuthzType).Msg("unsupported authz-config type provided")
 		}
 	}
+
+	// Redis connection setup
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     "redis:6379",
+		Password: "",
+		DB:       0,
+	})
+
+	if _, err := rdb.Ping(context.Background()).Result(); err != nil {
+		logger.Fatal().Err(err).Msg("could not connect to redis")
+	}
+	logger.Info().Msg("Successfully connected to redis")
+	globals.Global.RedisDb = rdb
 }
 
 // loadEnforcer creates a new Casbin SyncedEnforcer from the given model and policy files.
@@ -130,7 +145,7 @@ func main() {
 			logger.Fatal().Err(err).Msg("invalid proxy backend configuration")
 		}
 
-		routes.SetProxyRoutes(router, ginProxy, logger)
+		routes.SetProxyRoutes(router, ginProxy, &logger)
 	}
 
 	// Will listen to default port: 8000
