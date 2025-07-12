@@ -152,6 +152,7 @@ func main() {
 	router.Run()
 }
 
+// Just trying to run the builder
 // TODO: Implement this handler to return information regarding sidecar configurations
 func handleSidecarInfo(c *gin.Context) {
 	logger := zerolog.Ctx(c.Request.Context())
