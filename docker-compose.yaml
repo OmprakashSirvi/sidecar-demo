@@ -30,6 +30,7 @@ services:
     ports:
       # Will listen to 8000 port on local machine
       - 8000:8080
+      - 8070:8070
     environment:
       - MY_ENV=local
       - GIN_MODE=release
@@ -40,6 +41,7 @@ services:
       target: debug
     ports:
       - 8001:8080
+      - 8070:8070
     container_name: sidecar-dev
     depends_on:
       - backend-dev
@@ -52,3 +54,13 @@ services:
 
   redis:
     image: redis:8.0-alpine3.21
+
+  functional-tests:
+    build:
+      context: ./tests/functional
+    container_name: functional-tests
+    depends_on:
+      - backend
+      - sidecar
+      - redis
+    command: ["tail", "-f", "/dev/null"]
