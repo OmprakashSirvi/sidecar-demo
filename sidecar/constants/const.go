@@ -13,6 +13,7 @@ const MAX_CONNECTION_LIMIT = "max-connection-limit"
 const ENABLE_RATE_LIMIT = "enable-rate-limit"
 const MAX_REQUESTS_PER_SECOND = "max-requests-per-second"
 const BURST_THRESHOLD = "burst-threshold"
+const USER_RATE_LIMIT_WINDOW = "user-rate-limit-window"
 const REQUIRE_SERVICE_TICKET = "require-service-ticket"
 const TOKENS = "user-jwt"
 const TOKEN_TYPE = "type"
@@ -22,3 +23,4 @@ const TOKEN_TYPE_USER_JWT = "user-jwt"
 
 const DefaultMaxRequestPerSecond = 10
 const DefaultBurstThreshold = 100
+const DefaultUserRateLimitWindow = 300

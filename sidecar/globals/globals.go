@@ -18,6 +18,7 @@ type globalVars struct {
 	RequestTimeout       int
 	MaxRequestsPerSecond float64
 	BurstThreshold       int
+	RateLimitWindow      int
 	RedisDb              *redis.Client
 
 	UserAuthorizer    *models.BasicAuthorizer

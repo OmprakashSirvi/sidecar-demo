@@ -19,7 +19,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog"
-	"github.com/spf13/viper"
 )
 
 var defineFlags sync.Once
@@ -28,25 +27,12 @@ func initSidecar() {
 	logger := applogger.GetLogger()
 	config.InitConfig()
 
-	globals.Global.ProxyBackend = viper.GetString(config.GetKeyName(constants.PROXY_BACKEND))
 	logger.Debug().Str("message", fmt.Sprintf("backend URL : %v", globals.Global.ProxyBackend))
 
 	configDir, err := filepath.Abs(globals.Global.ConfigDir)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("invalid config directory")
 	}
-
-	// Set default values for your configuration keys.
-	viper.SetDefault(config.GetKeyName(constants.MAX_CONNECTION_LIMIT), 50)
-	viper.SetDefault(config.GetKeyName(constants.REQUEST_TIMEOUT), 10)
-	viper.SetDefault(config.GetKeyName(constants.MAX_REQUESTS_PER_SECOND), constants.DefaultMaxRequestPerSecond)
-	viper.SetDefault(config.GetKeyName(constants.BURST_THRESHOLD), constants.BURST_THRESHOLD)
-
-	// Set the config values into the application's global configuration
-	globals.Global.MaxConnectionLimit = viper.GetInt(config.GetKeyName(constants.MAX_CONNECTION_LIMIT))
-	globals.Global.RequestTimeout = viper.GetInt(config.GetKeyName(constants.REQUEST_TIMEOUT))
-	globals.Global.MaxRequestsPerSecond = viper.GetFloat64(config.GetKeyName(constants.MAX_REQUESTS_PER_SECOND))
-	globals.Global.BurstThreshold = viper.GetInt(config.GetKeyName(constants.BURST_THRESHOLD))
 
 	// Load casbin enforcers from authz config
 	logger.Debug().Int("length", len(globals.Global.AuthzConfigs)).Msg("number of authz-configs provided")

@@ -15,29 +15,34 @@ import (
 )
 
 func GlobalRateLimiter() gin.HandlerFunc {
-	limit := rate.NewLimiter(
-		rate.Limit(globals.Global.MaxRequestsPerSecond), globals.Global.BurstThreshold)
-
-	limiter := models.RateLimiter{Limit: limit, Type: "service"}
-
-	return RateLimitMiddleware(limiter)
+	return RateLimitMiddleware(nil, "service")
 }
 
-// TODO: Later will enhance this to introspect the headers
-// Precedence of rate limiting, Service(highest value) > route > user
-func RateLimitMiddleware(limiter models.RateLimiter) gin.HandlerFunc {
-	if limiter.Type == "user" {
+// Precedence of rate limiting, service(highest value) > route > user
+func RateLimitMiddleware(route *models.ProxyRoute, limitType string) gin.HandlerFunc {
+	var limiter *rate.Limiter
+
+	switch limitType {
+	case "service":
+		limiter = rate.NewLimiter(
+			rate.Limit(globals.Global.MaxRequestsPerSecond), globals.Global.BurstThreshold)
+	case "route":
+		limiter = rate.NewLimiter(rate.Limit(route.GetMaxRequestsPerSecond()), route.GetBurstThreshold())
+	case "user":
+		limit := *route.UserRateLimit
+		window := *route.UserRateLimitWindow
+
 		rdb := globals.Global.RedisDb
 		// For now keeping the window to 5 minutes..
-		return PerUserRateLimiter(rdb, 10, 300 * time.Second)
+		return PerUserRateLimiter(rdb, int64(limit), time.Duration(window*int(time.Second)))
 	}
 
 	return func(ctx *gin.Context) {
 		logger := applogger.GetCtxLogger(ctx)
 
-		if !limiter.Limit.Allow() {
+		if !limiter.Allow() {
 			// This request has been rate limited
-			logger.Debug().Str("limit_type", limiter.Type).Msg("too many requests")
+			logger.Debug().Str("limit_type", limitType).Msg("too many requests")
 			ctx.AbortWithStatusJSON(http.StatusTooManyRequests, "too many requests, try again after some time")
 			return
 		}
@@ -55,6 +60,7 @@ func PerUserRateLimiter(rdb *redis.Client, limit int64, window time.Duration) gi
 
 		// This will make sure that the key is same for current time window..
 		windowStart := now - (now % int64(window.Seconds()))
+		// TODO: Will need to encrypt this before storing this as key
 		redisKey := fmt.Sprintf("rate_limit:%s:%d", userId, windowStart)
 
 		var currentCount int64

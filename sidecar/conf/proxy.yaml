@@ -2,8 +2,9 @@ proxy-backend: http://localhost:8080
 
 max-connection-limit: 10
 request-timeout: 10
-max-requests-per-second: 10
-burst-threshold: 20
+max-requests-per-second: 40
+burst-threshold: 150
+user-rate-limit-window: 300
 
 authz-config:
   - type: "user-id"
@@ -21,8 +22,12 @@ proxy-routes:
   - type: GET
     path: /serviceInfo
     enable-rate-limit: true
-    max-requests-per-second: 2
-    burst-threshold: 5
+    max-requests-per-second: 20
+    burst-threshold: 100
+    enable-user-rate-limit: true
+    # Setting this to 10 requests/minute for a particular user
+    user-rate-limit: 10
+    user-rate-limit-window: 60
     # TODO: Use these configurations
     # For routes where the service ticket is required
     require-service-ticket: true

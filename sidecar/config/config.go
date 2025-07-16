@@ -27,8 +27,7 @@ func InitConfig() {
 
 	viper.AutomaticEnv()
 
-	// Setting the default environment variables
-	viper.SetDefault(constants.MY_ENV, "local")
+	setDefaults()
 	loadAuthzConfigs(&logger)
 }
 
@@ -42,6 +41,26 @@ func GetKeyName(key string) string {
 	}
 	// No override is available for this key, use the existing one..
 	return key
+}
+
+func setDefaults() {
+	// Setting the default environment variables
+	viper.SetDefault(constants.MY_ENV, "local")
+
+	// Set default values for your configuration keys.
+	viper.SetDefault(GetKeyName(constants.MAX_CONNECTION_LIMIT), 50)
+	viper.SetDefault(GetKeyName(constants.REQUEST_TIMEOUT), 10)
+	viper.SetDefault(GetKeyName(constants.MAX_REQUESTS_PER_SECOND), constants.DefaultMaxRequestPerSecond)
+	viper.SetDefault(GetKeyName(constants.BURST_THRESHOLD), constants.DefaultBurstThreshold)
+	viper.SetDefault(GetKeyName(constants.USER_RATE_LIMIT_WINDOW), constants.DefaultUserRateLimitWindow)
+
+	// Set the config values into the application's global configuration
+	globals.Global.MaxConnectionLimit = viper.GetInt(GetKeyName(constants.MAX_CONNECTION_LIMIT))
+	globals.Global.RequestTimeout = viper.GetInt(GetKeyName(constants.REQUEST_TIMEOUT))
+	globals.Global.MaxRequestsPerSecond = viper.GetFloat64(GetKeyName(constants.MAX_REQUESTS_PER_SECOND))
+	globals.Global.BurstThreshold = viper.GetInt(GetKeyName(constants.BURST_THRESHOLD))
+	globals.Global.RateLimitWindow = viper.GetInt(GetKeyName(constants.USER_RATE_LIMIT_WINDOW))
+	globals.Global.ProxyBackend = viper.GetString(GetKeyName(constants.PROXY_BACKEND))
 }
 
 // Loads and validates the authz-configs
