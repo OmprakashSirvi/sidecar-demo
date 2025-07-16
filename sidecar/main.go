@@ -101,6 +101,7 @@ func main() {
 
 	// sidecar router, handles sidecar routes
 	sidecarRouter := gin.Default()
+	sidecarRouter.SetTrustedProxies(nil)
 	// Request timeouts
 	sidecarRouter.Use(middlewares.TimeoutMiddleware())
 
@@ -110,7 +111,7 @@ func main() {
 	sidecarRouter.GET("/ticket", handleGetServiceTicket)
 
 	go func() {
-		err := sidecarRouter.Run("localhost:8070")
+		err := sidecarRouter.Run("0.0.0.0:8070")
 		if err != nil {
 			logger.Error().Err(err).Msg("sidecarRouter error")
 		}
@@ -118,6 +119,7 @@ func main() {
 
 	// Reverse proxy router, handles backend routes
 	router := gin.Default()
+	router.SetTrustedProxies(nil)
 	// For logging purposes
 	router.Use(middlewares.LoggingMiddleware())
 

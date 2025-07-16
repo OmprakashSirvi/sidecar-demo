@@ -63,4 +63,4 @@ services:
       - backend
       - sidecar
       - redis
-    command: ["tail", "-f", "/dev/null"]
+    # command: ["tail", "-f", "/dev/null"]
