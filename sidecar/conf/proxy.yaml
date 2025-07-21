@@ -6,6 +6,14 @@ max-requests-per-second: 40
 burst-threshold: 150
 user-rate-limit-window: 300
 
+# These are the current token types which are supported by the service
+token-types:
+  - name: user-jwt
+    jwks-url: valid-jwks-url
+
+  - name: product-jwt
+    jwks-url: valid-jwks-url
+
 authz-config:
   - type: "user-id"
     model-file: "auth_models.conf"
@@ -16,10 +24,12 @@ authz-config:
     policy-file: "auth_service_policy.csv"
 
 proxy-routes:
-  - type: GET
+  - name: ping-service
+    method: GET
     path: /ping
 
-  - type: GET
+  - name: service-info
+    method: GET
     path: /serviceInfo
     enable-rate-limit: true
     max-requests-per-second: 20
@@ -32,9 +42,35 @@ proxy-routes:
     # For routes where the service ticket is required
     require-service-ticket: true
     # In-case a route requires multiple access tokens
-    tokens:
-      - type: user-jwt
+    policies:
+      - type: jwt
+        name: user-jwt
 
+  - name: get-user-info
+    method: GET
+    path: /user/:user-id
+    # Admins or specified roles (defined in auth_policy.csv) will be able
+    # to access this route even if the resource ids do not match
+    super-override: true
+    policies:
+      - type: jwt
+        name: product-jwt
+      # Type of policy
+      # This policy type is jwt, the name of the jwt is user-jwt
+      # So sidecar will see that a policy of type jwt is enabled, and a user-jwt will be provided in the header
+      # The sidecar will match the resource with the "sub" claim in this token
+      - type: jwt
+        name: user-jwt
+        # header name
+        # In future we can provide the location of the jwt
+        resource-match:
+          # Explicitly map the claim from the JWT to the path parameter.
+          # This will check if the user-jwt's "sub" claim matches the param: "user-id"
+          claim: sub # The claim inside the JWT payload.
+          from: param # Where to get the value to match against
+          name: user-id # The name of the parameter.
+
+# These are the environment overrides
 local:
   proxy-backend: http://backend:8080
 

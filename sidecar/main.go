@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
+	"os"
 	"path/filepath"
 	"sidecar/applogger"
 	"sidecar/config"
@@ -150,5 +151,12 @@ func handleSidecarInfo(c *gin.Context) {
 
 // TODO: Implement this handler
 func handleGetServiceTicket(c *gin.Context) {
+	logger := applogger.GetCtxLogger(c)
+	hostName, err := os.Hostname()
+	if err != nil {
+		logger.Error().Err(err).Msg("there was some error while getting hostname")
+	}
+
+	logger.Debug().Str("hostName", hostName).Msg("this is the hostname")
 
 }

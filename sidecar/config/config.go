@@ -29,6 +29,7 @@ func InitConfig() {
 
 	setDefaults()
 	loadAuthzConfigs(&logger)
+	loadValidTokenTypes(&logger)
 }
 
 // Get the key name with the current env
@@ -74,6 +75,16 @@ func loadAuthzConfigs(logger *zerolog.Logger) {
 	// We can validate the authz configurations here if needed
 
 	globals.Global.AuthzConfigs = authzConfigs
+}
+
+func loadValidTokenTypes(logger *zerolog.Logger) {
+	var validTokenTypes []models.TokenTypes
+	err := viper.UnmarshalKey(GetKeyName(constants.TOKEN_TYPES), &validTokenTypes)
+	if err != nil {
+		logger.Fatal().Err(err).Msg("unable to load valid token types")
+	}
+
+	globals.Global.ValidTokenTypes = validTokenTypes
 }
 
 // Errors are already logged

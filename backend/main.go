@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 
@@ -24,6 +25,7 @@ func main() {
 
 	router.GET("/ping", handlePing)
 	router.GET("/serviceInfo", handleInfo)
+	router.GET("/user/:user-id", handleUserInfo)
 
 	router.Run()
 }
@@ -41,4 +43,17 @@ func handleInfo(c *gin.Context) {
 
 	logger.Info().Msg("handling serviceInfo route")
 	c.JSON(http.StatusOK, "this is some information regarding me")
+}
+
+func handleUserInfo(c *gin.Context) {
+	requestId := c.GetHeader("x-request-id")
+	logger := getLogger()
+	if requestId != "" {
+		logger = logger.With().Str("request_id", requestId).Logger()
+	}
+
+	userId := c.Param("user-id")
+
+	logger.Info().Str("user-id", userId).Msg("handling userInfo")
+	c.JSON(http.StatusOK, fmt.Sprintf("here is some user information on %v userId", userId))
 }

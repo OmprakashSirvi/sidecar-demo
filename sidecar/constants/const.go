@@ -18,6 +18,7 @@ const REQUIRE_SERVICE_TICKET = "require-service-ticket"
 const TOKENS = "user-jwt"
 const TOKEN_TYPE = "type"
 const TOKEN_TYPE_USER_JWT = "user-jwt"
+const TOKEN_TYPES = "token-types"
 
 // Numeric constants
 

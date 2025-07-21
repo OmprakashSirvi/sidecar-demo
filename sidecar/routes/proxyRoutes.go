@@ -21,7 +21,7 @@ func SetProxyRoutes(router *gin.Engine, proxy *httputil.ReverseProxy, parentLogg
 	}
 
 	for _, route := range routes {
-		logger := parentLogger.With().Str("method", route.Type).Str("path", route.Path).Logger()
+		logger := parentLogger.With().Str("method", route.Method).Str("path", route.Path).Logger()
 
 		// Checking if this route is configured properly
 		if msg, ok := route.IsValidRoute(); !ok {
@@ -33,9 +33,11 @@ func SetProxyRoutes(router *gin.Engine, proxy *httputil.ReverseProxy, parentLogg
 		routeHandlers := []gin.HandlerFunc{}
 
 		// Add authorization middleware if the route is protected.
-		if len(route.RouteTokens) != 0 {
+		if len(route.RoutePolicies) != 0 {
+			// Should add a middleware here which will validate the JWT tokens beforehand
+			routeHandlers = append(routeHandlers, middlewares.ValidateJwtTokens(&route))
 			// If authorization is enabled, then this should be the first middleware before ratelimiting
-			routeHandlers = append(routeHandlers, middlewares.AuthorizeRequest())
+			routeHandlers = append(routeHandlers, middlewares.AuthorizeRequest(&route))
 		}
 
 		// TODO: For now RateLimiters configurations could not be set dynamically, need to figure this out
@@ -59,7 +61,7 @@ func SetProxyRoutes(router *gin.Engine, proxy *httputil.ReverseProxy, parentLogg
 		routeHandlers = append(routeHandlers, handlers.ProxyRequestHandler(proxy, route))
 
 		// TODO: Here need to add more switch cases
-		switch route.Type {
+		switch route.Method {
 		case "GET":
 			router.GET(route.Path, routeHandlers...)
 		}
