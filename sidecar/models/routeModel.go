@@ -17,9 +17,9 @@ type ProxyRoute struct {
 }
 
 type RoutePolicy struct {
-	Type            string          `mapstructure:"type"`
-	Name            string          `mapstructure:"name"`
-	ResourceMatches ResourceMatch `mapstructure:"resource-match"`
+	Type          string        `mapstructure:"type"`
+	Name          string        `mapstructure:"name"`
+	ResourceMatch ResourceMatch `mapstructure:"resource-match"`
 }
 
 type ResourceMatch struct {

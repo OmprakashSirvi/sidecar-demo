@@ -66,9 +66,32 @@ proxy-routes:
         resource-match:
           # Explicitly map the claim from the JWT to the path parameter.
           # This will check if the user-jwt's "sub" claim matches the param: "user-id"
+          # TODO: For now we do not have valid tokens to test it out, hence the code is not 
           claim: sub # The claim inside the JWT payload.
           from: param # Where to get the value to match against
           name: user-id # The name of the parameter.
+
+  # This is a bit complicated route..
+  - name: get-user-product-info
+    method: GET
+    path: /user/:user-id/product/:product-uid
+    policies:
+      - type: jwt
+        # This will expect a header: x-product-jwt
+        name: product-jwt
+        resource-match:
+          claim: sub
+          from: param
+          name: product-uid
+
+      - type: jwt
+      # This will expect a header: x-user-jwt
+      # Sidecar will validate this token, and add a x-user-id header
+        name: user-jwt
+        resource-match:
+          claim: sub
+          from: param
+          name: user-id
 
 # These are the environment overrides
 local:
