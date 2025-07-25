@@ -19,7 +19,7 @@ type globalVars struct {
 	MaxRequestsPerSecond float64
 	BurstThreshold       int
 	RateLimitWindow      int
-	ValidTokenTypes      []models.TokenTypes
+	TokenTypes           []models.TokenType
 
 	RedisDb *redis.Client
 

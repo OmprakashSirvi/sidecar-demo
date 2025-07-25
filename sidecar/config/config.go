@@ -78,17 +78,19 @@ func loadAuthzConfigs(logger *zerolog.Logger) {
 }
 
 func loadValidTokenTypes(logger *zerolog.Logger) {
-	var validTokenTypes []models.TokenTypes
+	var validTokenTypes []models.TokenType
 	err := viper.UnmarshalKey(GetKeyName(constants.TOKEN_TYPES), &validTokenTypes)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("unable to load valid token types")
 	}
 
-	globals.Global.ValidTokenTypes = validTokenTypes
+	globals.Global.TokenTypes = validTokenTypes
 }
 
 // Errors are already logged
-func GetRoutesFromConfig(logger *zerolog.Logger) ([]models.ProxyRoute, error) {
+func GetRoutesFromConfig(parentLogger *zerolog.Logger) ([]models.ProxyRoute, error) {
+	logger := parentLogger.With().Str("function", "GetRoutesFromConfig").Logger()
+	logger.Trace().Msg("getting routes from configuration files")
 	if ok := viper.IsSet(GetKeyName(constants.PROXY_ROUTES)); !ok {
 		errMsg := "proxy-routes is not set, hence not configuring any routes"
 		logger.Debug().Msg(errMsg)

@@ -10,7 +10,7 @@ import (
 
 func InitLogging() {
 	log.Logger = zerolog.New(os.Stdout).With().Logger()
-	zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	zerolog.SetGlobalLevel(zerolog.TraceLevel)
 }
 
 func GetLogger() zerolog.Logger {
