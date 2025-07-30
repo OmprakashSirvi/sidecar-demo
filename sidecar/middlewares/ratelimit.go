@@ -52,8 +52,14 @@ func RateLimitMiddleware(route *models.ProxyRoute, limitType string) gin.Handler
 
 func PerUserRateLimiter(rdb *redis.Client, limit int64, window time.Duration) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		// Also return an error if userId is not found..
-		userId := getUserIdFromHeader(ctx)
+		logger := applogger.GetCtxLogger(ctx).With().Str("function", "PerUserRateLimiter").Logger()
+
+		// Also return an error if userIdentifier is not found..
+		userIdentifier, err := getUserIdFromHeader(ctx)
+		if err != nil {
+			logger.Error().Err(err)
+			userIdentifier = ctx.GetHeader("x-forwarded-for")
+		}
 
 		// Create a redis key for the current time window
 		now := time.Now().Unix()
@@ -61,7 +67,7 @@ func PerUserRateLimiter(rdb *redis.Client, limit int64, window time.Duration) gi
 		// This will make sure that the key is same for current time window..
 		windowStart := now - (now % int64(window.Seconds()))
 		// TODO: Will need to encrypt this before storing this as key
-		redisKey := fmt.Sprintf("rate_limit:%s:%d", userId, windowStart)
+		redisKey := fmt.Sprintf("rate_limit:%s:%d", userIdentifier, windowStart)
 
 		var currentCount int64
 		pipe := rdb.Pipeline()
@@ -69,7 +75,7 @@ func PerUserRateLimiter(rdb *redis.Client, limit int64, window time.Duration) gi
 		incrCmd := pipe.Incr(context.Background(), redisKey)
 
 		pipe.Expire(context.Background(), redisKey, window+5*time.Second)
-		_, err := pipe.Exec(context.Background())
+		_, err = pipe.Exec(context.Background())
 		if err != nil {
 			// This error will indicate that the redis is down, log this error and allow this user for now
 			ctx.Error(err)

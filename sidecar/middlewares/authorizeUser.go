@@ -88,7 +88,12 @@ func AuthorizeRequest(route *models.ProxyRoute) gin.HandlerFunc {
 			logger.Debug().Msg("resource did not match checking for super override permissions")
 		}
 
-		userId := getUserIdFromHeader(ctx)
+		userId, err := getUserIdFromHeader(ctx)
+		if err != nil {
+			ctx.AbortWithError(http.StatusUnauthorized, err)
+			return
+		}
+
 		// If super-override is enabled then a user with specified privileges can access this route.
 		// If the user do not have access then in this case we check for resource matches..
 		// Just authorize this request on basis of route access.
@@ -158,8 +163,12 @@ func checkUserAccessPermissions(userId string, path string, method string, paren
 // TODO: This will be enhanced to verify the jwt, introspect the token to get userID
 //
 // TODO: We should also consider configuring where the auth-token will be provided..
-func getUserIdFromHeader(c *gin.Context) string {
-	return c.GetHeader("x-user-id")
+func getUserIdFromHeader(c *gin.Context) (string, error) {
+	userId := c.GetHeader("x-user-id")
+	if userId == "" {
+		return "", errors.New("x-user-id not found in request id")
+	}
+	return userId, nil
 }
 
 func getResourceIdFromHeader(c *gin.Context, name string) string {

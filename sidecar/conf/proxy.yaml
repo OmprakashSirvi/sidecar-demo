@@ -27,6 +27,10 @@ proxy-routes:
   - name: ping-service
     method: GET
     path: /ping
+    # This will rate limit based on user-ip address
+    enable-user-rate-limit: true
+    user-rate-limit: 10
+    user-rate-limit-window: 60
 
   - name: service-info
     method: GET
